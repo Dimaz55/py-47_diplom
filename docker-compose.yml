@@ -1,0 +1,55 @@
+version: "3.3"
+
+services:
+  diplom-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: diplom-api
+    restart: always
+    command: sh -c "
+      python manage.py showmigrations &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000 -v 3"
+    volumes:
+      - ".:/app/diplom-api/"
+    ports:
+      - 8000:8000
+    env_file: .env_local
+    depends_on:
+      - diplom-db
+      
+  diplom-db:
+    image: postgres:13
+    container_name: diplom-db
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  diplom-redis:
+    image: redis:6.2.4
+    container_name: diplom-redis
+    ports:
+      - 6379:6379
+
+  diplom-celery:
+    container_name: diplom-celery
+    env_file: .env_local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app/diplom-api/
+    depends_on:
+      - diplom-redis
+      - diplom-db
+
+volumes:
+  pgdata:

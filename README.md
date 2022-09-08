@@ -7,7 +7,7 @@ ___
 ```http request
 POST /users/register/
 ```
-```javascript
+```
 {
   "last_name": str, // Фамилия
   "first_name": str, // Имя
@@ -20,7 +20,7 @@ POST /users/register/
 ```
 ___
 **Получение токена (логин):**
-```json
+```
 Запрос:
 {
   "email": "email@example.com",
@@ -61,7 +61,7 @@ ___
 GET /products/
 ```
 Ответ:
-```json
+```
 {
   "id": int,
   "sku": str, // Уникальный артикул модификации товара
@@ -87,7 +87,7 @@ GET /products/
 GET /products/<product_id>/
 ```
 Ответ аналогичен списку, но добавлены характеристики товара:
-```json
+```
 {
   "props": [
     {
@@ -106,7 +106,7 @@ Authorization: Token <your_token>
 ```
 
 Запрос:
-```json
+```
 [
   {
     "id": int, // Идентификатор цены товара для заказа
@@ -116,7 +116,7 @@ Authorization: Token <your_token>
 ]
 ```
 Ответ:
-```json
+```
 {
   "id": int, // Номер заказа
   "status": str, // Статус заказа

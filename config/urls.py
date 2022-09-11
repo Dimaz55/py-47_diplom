@@ -1,13 +1,15 @@
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import path, include
 from rest_framework import routers
 
 from users.views import UserViewSet, UserLoginView, PasswordResetViewSet
-from main.views import PricelistUploadViewSet, ProductViewSet
+from main.views import PricelistUploadViewSet, ProductViewSet, OrderViewSet, CartViewSet
 
 router = routers.SimpleRouter()
 router.register(r'upload', PricelistUploadViewSet, 'upload')
 router.register(r'products', ProductViewSet)
+router.register(r'orders', OrderViewSet)
+router.register(r'cart', CartViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

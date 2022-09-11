@@ -99,9 +99,9 @@ GET /products/<product_id>/
 }
 ```
 ___
-**Заказ товаров (Ещё не реализовано):**
+**Заказ товаров (доступно только покупателям {"role": "buyer"}):**
 ```http request
-POST /orders/
+POST /cart/
 Authorization: Token <your_token>
 ```
 
@@ -109,7 +109,7 @@ Authorization: Token <your_token>
 ```
 [
   {
-    "id": int, // Идентификатор цены товара для заказа
+    "pricelist": int, // Идентификатор цены товара для заказа
     "quantity": int // Количество
   },
   ...
@@ -120,14 +120,35 @@ Authorization: Token <your_token>
 {
   "id": int, // Номер заказа
   "status": str, // Статус заказа
-  "products": [
+  "address": str, // Адрес доставки
+  "items": [ // Список заказанных товаров
     {
-      "sku": str, // Артикул товара
-      "quantity": int, // Количество заказанных единиц
-      "total_price": int, // Общая стоимость
-      "delivery_price": int // Стоимость доставки
+      "title": str, // Название товара
+      "product_price": int, // Цена за единицу
+      "delivery_price": int, // Стоимость доставки
+      "quantity": int, // Количество заказнных единиц
+      "seller": str, // Наименование продавца
     },
     ...
-  ]
+  ],
+  "summary": {
+    "products_total": int, // Стоимость товаров
+    "delivery_total": int, // Стоимость доставки
+    "total": int // Итоговая сумма
+  }
 }
 ```
+___
+**Просмотр заказов:**
+Список:
+```http request
+GET /orders/
+Authorization: Token <your_token>
+```
+Карточка заказа:
+```http request
+GET /orders/<id>/
+Authorization: Token <your_token>
+```
+Ответ зависит от роли пользователя: продавцы видят только заказы с их товарами, покупатель видит 
+только свои заказы. Выдача аналогична ответу в создании заказа.

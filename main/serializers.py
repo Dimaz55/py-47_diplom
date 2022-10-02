@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
@@ -11,17 +12,18 @@ class PricelistUploadSerializer(serializers.ModelSerializer):
     result_check_endpoint = serializers.SerializerMethodField()
     file = serializers.FileField(write_only=True)
     upload_result = serializers.JSONField(default={'status': 'parsing'})
-
+    
     class Meta:
         model = PricelistFile
         fields = ['file', 'upload_result', 'result_check_endpoint']
-
+    
     def create(self, validated_data):
         instance = super().create(validated_data)
         parse_pricelist.delay(instance.id)
         return instance
-
-    def get_result_check_endpoint(self, obj):
+    
+    @extend_schema_field(serializers.URLField)
+    def get_result_check_endpoint(self, obj) -> str:
         request = self.context['request']
         return reverse('upload-detail', kwargs={'pk': obj.id}, request=request)
 
@@ -34,7 +36,7 @@ class PropertySerializer(serializers.ModelSerializer):
 
 class PricelistSerializer(serializers.ModelSerializer):
     seller = serializers.CharField(source='seller.company')
-
+    
     class Meta:
         model = Pricelist
         fields = [
@@ -48,7 +50,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='product.title')
     category = serializers.CharField(source='product.category.title')
     prices = PricelistSerializer(many=True)
-
+    
     class Meta:
         model = Variant
         fields = ['id', 'sku', 'brand', 'title', 'category', 'prices']
@@ -60,7 +62,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     category = serializers.CharField(source='product.category.title')
     props = PropertySerializer(many=True)
     prices = PricelistSerializer(many=True)
-
+    
     class Meta:
         model = Variant
         fields = ['id', 'sku', 'brand', 'title', 'category', 'props', 'prices']
@@ -69,7 +71,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 class OrderPricelistSerializer(serializers.ModelSerializer):
     seller = serializers.CharField(source='seller.company')
     title = serializers.CharField(source='variant')
-
+    
     class Meta:
         model = Pricelist
         fields = [
@@ -84,13 +86,13 @@ class OrderItemSerializer(serializers.ModelSerializer):
     delivery_price = serializers.IntegerField(
         source='pricelist.delivery_price', required=False)
     seller = serializers.StringRelatedField(source='pricelist.seller.company')
-
+    
     class Meta:
         model = OrderItem
         fields = ['pricelist', 'product', 'product_price', 'delivery_price',
                   'quantity', 'seller']
         read_only_fields = ['product', 'product_price', 'delivery_price']
-
+    
     def validate_quantity(self, value):
         pricelist = self.initial_data[0]['pricelist']
         obj = Pricelist.objects.filter(pk=pricelist).first()
@@ -104,6 +106,23 @@ class OrderItemSerializer(serializers.ModelSerializer):
             return value
 
 
+class OrderSerializer(serializers.ModelSerializer):
+    summary = serializers.SerializerMethodField()
+    items = OrderItemSerializer(source='order_items', many=True)
+    
+    @extend_schema_field(serializers.JSONField)
+    def get_summary(self, obj):
+        items = obj.order_items.all()
+        if 'request' in self.context:
+            user = self.context['request'].user
+            if user and user.role == 'seller':
+                items = obj.order_items.filter(pricelist__seller=user)
+        products, delivery = get_totals(items)
+        return {'products_total': products,
+                'delivery_total': delivery,
+                'total': products + delivery}
+
+
 class SellerOrderItemSerializer(serializers.ModelSerializer):
     product = serializers.StringRelatedField(source='pricelist.variant')
     sku = serializers.CharField(source='pricelist.variant.sku')
@@ -113,7 +132,7 @@ class SellerOrderItemSerializer(serializers.ModelSerializer):
         source='pricelist.delivery_price', required=False)
     in_stock = serializers.IntegerField(
         source='pricelist.in_stock', required=False)
-
+    
     class Meta:
         model = OrderItem
         fields = ['pricelist', 'product', 'sku', 'product_price', 'delivery_price',
@@ -122,55 +141,39 @@ class SellerOrderItemSerializer(serializers.ModelSerializer):
                             'delivery_price', 'seller_stock', 'customer']
 
 
-class SellerOrderSerializer(serializers.ModelSerializer):
-    total_sum = serializers.SerializerMethodField()
+class SellerOrderSerializer(OrderSerializer):
     customer = serializers.StringRelatedField()
     customer_company = serializers.CharField(source='customer.company')
 
-    def get_total_sum(self, obj):
-        user = self.context['request'].user
-        items = obj.order_items.filter(pricelist__seller=user)
-        products, delivery = get_totals(items)
-        if products and delivery:
-            return {'products_total': products, 'delivery_total': delivery}
-        return None
-
 
 class SellerOrderListSerializer(SellerOrderSerializer):
+    delivery_address = serializers.CharField(source='address')
+    
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'customer_company', 'status', 'total_sum']
+        fields = ['id', 'customer', 'customer_company', 'delivery_address', 'status', 'summary']
 
 
 class SellerOrderDetailSerializer(SellerOrderSerializer):
     items = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = Order
-        fields = '__all__'
-
+        fields = ['id', 'customer', 'customer_company', 'status', 'address', 'created_at',
+                  'summary', 'items']
+    
     def get_items(self, obj):
         user = self.context['request'].user
         items = obj.order_items.filter(pricelist__seller=user)
         return SellerOrderItemSerializer(items, many=True).data
 
 
-class CartSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(source='order_items', many=True)
-    summary = serializers.SerializerMethodField()
-
+class CartSerializer(OrderSerializer):
     class Meta:
         model = Order
         fields = ['id', 'summary', 'items', 'address']
         read_only_fields = ['status', 'customer']
-
-    def get_summary(self, obj):
-        items = obj.order_items.all()
-        products, delivery = get_totals(items)
-        if products and delivery:
-            return {'products_total': products, 'delivery_total': delivery}
-        return None
-
+    
     def create(self, validated_data):
         items = validated_data.pop('order_items')
         cart = Order.objects.create(**validated_data)
@@ -181,28 +184,13 @@ class CartSerializer(serializers.ModelSerializer):
         return cart
 
 
-class BuyerOrderSerializer(serializers.ModelSerializer):
-    summary = serializers.SerializerMethodField()
-
-    def get_summary(self, obj):
-        items = obj.order_items.all()
-        products, delivery = get_totals(items)
-        if products and delivery:
-            return {'products_total': products,
-                    'delivery_total': delivery,
-                    'total': products + delivery}
-        return None
-
-
-class BuyerOrderListSerializer(BuyerOrderSerializer):
+class BuyerOrderListSerializer(OrderSerializer):
     class Meta:
         model = Order
         fields = ['id', 'status', 'address', 'summary']
 
 
-class BuyerOrderDetailSerializer(BuyerOrderSerializer):
-    items = OrderItemSerializer(source='order_items', many=True)
-
+class BuyerOrderDetailSerializer(OrderSerializer):
     class Meta:
         model = Order
         fields = ['id', 'status', 'created_at', 'address', 'items', 'summary']

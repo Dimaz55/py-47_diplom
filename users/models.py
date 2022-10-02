@@ -20,4 +20,4 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return f'{self.last_name} {str(self.first_name)[0]}. ' \
-               f'{str(self.patronymic)[0]+"." or None}'
+               f'{str(self.patronymic)[0]+"." if self.patronymic else None}'

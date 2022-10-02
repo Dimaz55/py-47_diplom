@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'redis',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -111,7 +112,19 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    
 }
 
 MEDIA_URL = 'files/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'files')
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Дипломная работа PY-47',
+    'DESCRIPTION': 'Приложение предназначено для автоматизации закупок в розничной сети. '
+                   'Пользователи сервиса — покупатель (менеджер торговой сети, который закупает '
+                   'товары для продажи в магазине) и поставщик товаров.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}

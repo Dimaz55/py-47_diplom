@@ -21,9 +21,10 @@ def user_factory():
 def seller_data():
 	return {
 		'last_name': 'Testov',
-		'first_name': 'Seller',
-		'company': 'Sales Inc.',
-		'email': 'testov@seller-email.com',
+		'first_name': 'Test',
+		'patronymic': 'Testovich',
+		'company': 'Test company',
+		'email': 'test@example.com',
 		'password': 'SuperPassword',
 		'role': 'seller'
 	}
@@ -33,9 +34,10 @@ def seller_data():
 def buyer_data():
 	return {
 		'last_name': 'Testov',
-		'first_name': 'Buyer',
-		'company': 'Allbuy Co',
-		'email': 'testov@buyer-email.com',
+		'first_name': 'Test',
+		'patronymic': 'Testovich',
+		'company': 'Test company',
+		'email': 'test@example.com',
 		'password': 'SuperPassword',
 		'role': 'buyer'
 	}

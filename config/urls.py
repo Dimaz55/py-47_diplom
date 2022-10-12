@@ -18,6 +18,7 @@ urlpatterns = [
         path('profile/', UserViewSet.as_view(
             {'get': 'retrieve', 'patch': 'partial_update'}),
              kwargs={'pk': 'me', 'name': 'profile'},
+             name='user-profile'
              ),
         path('login/', UserLoginView.as_view(), name='user-login'),
         path('register/', UserViewSet.as_view({'post': 'create'}), name='user-register'),

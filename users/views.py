@@ -1,5 +1,5 @@
 from drf_spectacular.utils import extend_schema, OpenApiExample
-from rest_framework import viewsets, generics, views
+from rest_framework import viewsets, generics
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView
@@ -18,6 +18,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     http_method_names = ['get', 'post', 'patch']
     serializer_class = UserSerializer
+    throttle_scope = 'users'
     
     def get_permission_classes(self):
         if self.action == 'post':
@@ -79,6 +80,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class UserLoginView(generics.CreateAPIView):
     serializer_class = LoginSerializer
+    throttle_scope = 'users'
     
     @extend_schema(
         summary='Аутентификация (получение токена)',
@@ -105,6 +107,7 @@ class UserLoginView(generics.CreateAPIView):
 
 class PasswordResetViewSet(GenericAPIView):
     serializer_class = PasswordResetSerializer
+    throttle_scope = 'password_reset'
     
     @extend_schema(
         summary='Генерация нового пароля и отправка на почту',

@@ -29,6 +29,7 @@ class PricelistUploadViewSet(viewsets.GenericViewSet,
     queryset = PricelistFile.objects.all()
     serializer_class = PricelistUploadSerializer
     permission_classes = [IsAuthenticated, IsSeller]
+    throttle_scope = 'upload'
     
     def get_queryset(self):
         queryset = super().get_queryset()

@@ -65,6 +65,12 @@ def csv_pricelist():
 @pytest.fixture
 def product_factory():
     def factory(**kwargs):
+        in_stock = kwargs.get('in_stock', 0)
+        if in_stock > 0:
+            in_stock = kwargs.pop('in_stock')
+        else:
+            kwargs.pop('in_stock')
+            in_stock = 0
         seller = baker.make('users.User', role='seller')
         properties = baker.prepare('main.Property', _quantity=2)
         variants = baker.make(
@@ -72,7 +78,7 @@ def product_factory():
         if isinstance(variants, list):
             for variant in variants:
                 Pricelist.objects.create(
-                    variant=variant, seller=seller, in_stock=5)
+                    variant=variant, seller=seller, in_stock=in_stock)
         return variants
     
     return factory
@@ -89,9 +95,10 @@ def order_factory():
 
 @pytest.fixture
 def products_data():
-    def product_dict(*args):
+    def product_dict(*args, quantity=0):
         return {
-            'items': [{'pricelist': product.prices.first().id, 'quantity': 1}
+            'items': [
+                {'pricelist': product.prices.first().id, 'quantity': quantity}
                       for product in args[0]]
         }
     return product_dict

@@ -68,6 +68,12 @@ class UserViewSet(viewsets.ModelViewSet):
         ]
     )
     def partial_update(self, request, *args, **kwargs):
+        if 'email' in request.data:
+            request.data.pop('email')
+        if 'password' in request.data:
+            request.data.pop('password')
+        if 'role' in request.data:
+            request.data.pop('role')
         return super().partial_update(request, *args, **kwargs)
 
 

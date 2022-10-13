@@ -29,10 +29,9 @@ class PricelistUploadViewSet(viewsets.GenericViewSet,
     queryset = PricelistFile.objects.all()
     serializer_class = PricelistUploadSerializer
     permission_classes = [IsAuthenticated, IsSeller]
-    basename = 'upload'
     
     def get_queryset(self):
-        queryset = self.get_queryset()
+        queryset = super().get_queryset()
         return queryset.filter(seller=self.request.user)
     
     @extend_schema(summary='Выгрузка прайс-листа')

@@ -7,7 +7,7 @@ from users.views import UserViewSet, UserLoginView, PasswordResetViewSet
 from main.views import PricelistUploadViewSet, ProductViewSet, OrderViewSet, CartViewSet
 
 router = routers.SimpleRouter()
-router.register(r'upload', PricelistUploadViewSet, 'upload-pricelist')
+router.register(r'upload', PricelistUploadViewSet, 'upload')
 router.register(r'products', ProductViewSet, 'products')
 router.register(r'orders', OrderViewSet, 'orders')
 router.register(r'cart', CartViewSet, 'cart')
